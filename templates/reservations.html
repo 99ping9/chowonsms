@@ -338,14 +338,42 @@
                         </div>
                     </form>
                 </div>
-                <div class="bg-gray-50/50 px-6 py-4 flex flex-row-reverse gap-3">
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h4 class="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        문자 즉시발송 (테스트 및 재전송)
+                    </h4>
+                    <div class="flex gap-2">
+                        <select id="sms_template"
+                            class="flex-1 px-3 py-2 rounded-lg bg-gray-50 text-gray-900 text-sm focus:ring-2 focus:ring-indigo-500 border-none">
+                            <option value="">템플릿 선택...</option>
+                            <optgroup label="자동 발송 템플릿">
+                                <option value="checkin">입실 안내 (14:50)</option>
+                                <option value="checkout">퇴실 안내 (09:00)</option>
+                                <option value="multinight">연박 안내 (09:00)</option>
+                            </optgroup>
+                            <optgroup label="공통/수동 템플릿">
+                                <option value="common">공지사항 (전체)</option>
+                            </optgroup>
+                        </select>
+                        <button type="button" onclick="sendManualSMS()"
+                            class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition-colors">
+                            전송
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end gap-3">
+                    <button type="button" id="deleteBtn" onclick="deleteReservation()"
+                        class="inline-flex w-full justify-center rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 sm:w-auto">
+                        삭제
+                    </button>
                     <button type="button" onclick="updateReservation()"
                         class="inline-flex w-full justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:w-auto">
-                        수정 내용 저장
-                    </button>
-                    <button type="button" onclick="deleteCurrentReservation()"
-                        class="inline-flex w-full justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-100 hover:bg-red-50 sm:w-auto">
-                        예약 삭제
+                        수정 저장
                     </button>
                     <button type="button" onclick="closeEditModal()"
                         class="inline-flex w-full justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 sm:w-auto">
@@ -373,6 +401,7 @@
                 right: 'dayGridMonth,listWeek'
             },
             eventDisplay: 'block', // Force block display for events
+            eventOrder: 'sortIdx', // [NEW] Sort events by custom property
             events: async function (info, successCallback, failureCallback) {
                 try {
                     // 1. Fetch Reservations
@@ -386,6 +415,16 @@
                         .map(cb => cb.value);
 
                     const filteredData = data.filter(r => selectedAccommodations.includes(r.accommodation_name));
+
+                    // Priority Map for Sorting
+                    const sortPriority = {
+                        '초원고택1': 1,
+                        '초원고택2': 2,
+                        '초원고택3': 3,
+                        '초원별장(시네)': 4,
+                        '초원별장(정글)': 5,
+                        '초원브릿지': 6
+                    };
 
                     const reservationEvents = filteredData.map(r => {
                         // 숙소별 색상 지정 (파스텔 톤)
@@ -402,6 +441,7 @@
                             allDay: true,
                             backgroundColor: color,
                             borderColor: color,
+                            sortIdx: sortPriority[r.accommodation_name] || 99, // Sort key
                             extendedProps: { ...r }
                         };
                     });
@@ -565,6 +605,45 @@
 
     function closeEditModal() {
         document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function sendManualSMS() {
+        const id = document.getElementById('edit_id').value;
+        const templateType = document.getElementById('sms_template').value;
+
+        if (!id) {
+            showCustomAlert('예약 정보를 찾을 수 없습니다.');
+            return;
+        }
+        if (!templateType) {
+            showCustomAlert('발송할 템플릿을 선택해주세요.');
+            return;
+        }
+
+        if (!confirm('정말로 문자를 발송하시겠습니까?')) return;
+
+        try {
+            const res = await fetch('/api/sms/send-manual', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    reservation_id: parseInt(id),
+                    template_type: templateType
+                })
+            });
+
+            if (res.ok) {
+                showCustomAlert('문자가 성공적으로 발송되었습니다.', '발송 성공');
+            } else {
+                const errorData = await res.json();
+                showCustomAlert(errorData.detail || '문자 발송에 실패했습니다.', '발송 실패');
+            }
+        } catch (err) {
+            showCustomAlert('서버 통신 오류가 발생했습니다.', '오류');
+            console.error(err);
+        }
     }
 
     // --- Update ---

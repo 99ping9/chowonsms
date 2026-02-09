@@ -21,6 +21,9 @@ app.include_router(reservations.router)
 app.include_router(templates_router.router)
 app.include_router(admin.router)
 app.include_router(cron.router)
+from app.routers import sms
+app.include_router(sms.router)
+app.include_router(sms.admin_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):

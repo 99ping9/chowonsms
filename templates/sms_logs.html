@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">
+                문자 발송 내역
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">최근 50건의 문자 발송 기록을 확인합니다.</p>
+        </div>
+        <button onclick="location.reload()"
+            class="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/50 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            발송 시간
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            수신자
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            숙소
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            발송 타입
+                        </th>
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            상태
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-transparent" id="logsTableBody">
+                    <!-- JS will populate this -->
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-gray-500 text-sm">
+                            로딩 중...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', fetchLogs);
+
+    async function fetchLogs() {
+        const tbody = document.getElementById('logsTableBody');
+        try {
+            const res = await fetch('/admin/sms-logs'); // We need to ensure this endpoint exists as JSON or HTML
+            // Note: In routers/sms.py, /admin/sms-logs currently returns JSON.
+            // If we access this page via GET /admin/sms-logs (browser), we need a separate endpoint for HTML serving
+            // OR use client-side fetching as we are doing here.
+            // However, the router defined /admin/sms-logs as returning JSON data. 
+            // We need to clarify the routing structure. 
+            // Let's assume /api/sms/logs for JSON and /admin/sms-logs for HTML.
+            // But currently the router uses /admin/sms-logs for JSON. 
+            // We should fix this in the next step or adjust the fetch URL if we change the router.
+
+            // Wait, the user asked for a page. app/main.py links admin router to /admin.
+            // app/routers/sms.py links admin_router to /admin.
+            // So /admin/sms-logs returns JSON data (list of dictionaries).
+            // We need a way to serve THIS HTML file.
+            // I should have created a separate endpoint in routers/templates.py or similar to serve this HTML,
+            // and use a different endpoint for the data (e.g., /api/sms/logs).
+
+            // For now, let's assume I will fix the routing in the next step.
+            // Let's assume the data endpoint will be /api/sms/logs
+
+            const dataRes = await fetch('/api/sms/logs');
+            if (!dataRes.ok) throw new Error('Failed to fetch logs');
+
+            const logs = await dataRes.json();
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500 text-sm">데이터가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => {
+                const dateParam = new Date(log.sent_at);
+                const dateStr = dateParam.toLocaleString('ko-KR', {
+                    month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                let typeBadge = '';
+                if (log.trigger_type.includes('manual')) {
+                    typeBadge = `<span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/20">수동 발송</span>`;
+                } else {
+                    typeBadge = `<span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">자동 발송</span>`;
+                }
+
+                let statusBadge = log.status === 'success'
+                    ? `<span class="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">성공</span>`
+                    : `<span class="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">실패</span>`;
+
+                return `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${dateStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${log.guest_name}</div>
+                            <div class="text-xs text-gray-500">${log.phone_number}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.accommodation_name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${typeBadge}
+                            <div class="text-xs text-gray-400 mt-0.5">${log.trigger_type}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-red-500 text-sm">로그를 불러오는 중 오류가 발생했습니다.</td></tr>';
+        }
+    }
+</script>
+{% endblock %}

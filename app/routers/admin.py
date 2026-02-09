@@ -23,3 +23,7 @@ async def verify_pin(payload: dict = Body(...)):
         return JSONResponse(content={"status": "ok"})
     else:
         return JSONResponse(content={"status": "error", "message": "Invalid PIN"}, status_code=401)
+
+@router.get("/sms-logs", response_class=HTMLResponse)
+async def sms_logs_page(request: Request):
+    return templates.TemplateResponse("sms_logs.html", {"request": request})
