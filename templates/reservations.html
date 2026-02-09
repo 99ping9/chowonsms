@@ -350,14 +350,13 @@
                         <select id="sms_template"
                             class="flex-1 px-3 py-2 rounded-lg bg-gray-50 text-gray-900 text-sm focus:ring-2 focus:ring-indigo-500 border-none">
                             <option value="">템플릿 선택...</option>
-                            <optgroup label="자동 발송 템플릿">
-                                <option value="checkin">입실 안내 (14:50)</option>
-                                <option value="checkout">퇴실 안내 (09:00)</option>
-                                <option value="multinight">연박 안내 (09:00)</option>
-                            </optgroup>
-                            <optgroup label="공통/수동 템플릿">
-                                <option value="common">공지사항 (전체)</option>
-                            </optgroup>
+                            <option value="checkin_0901">체크인안내</option>
+                            <option value="checkin_1450">입실안내</option>
+                            <option value="checkin_0900">맛집안내</option>
+                            <option value="checkin_1900">전체공통 저녁안내</option>
+                            <option value="checkout_0900">전체공통 퇴실안내</option>
+                            <option value="checkout_1700">전체공통 리뷰요청</option>
+                            <option value="multinight_0900">연박안내</option>
                         </select>
                         <button type="button" onclick="sendManualSMS()"
                             class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition-colors">

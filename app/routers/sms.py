@@ -51,9 +51,16 @@ async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get
             else:
                 raise HTTPException(status_code=404, detail="Template not found")
         else:
-            # Fallback: 타입과 숙소명으로 검색
-            # 예: trigger_type like '%checkin%'
-            pass
+            # Fallback: Search by trigger_type and accommodation_name
+            tmpl_res = supabase.table("message_templates").select("content")\
+                .eq("trigger_type", req.template_type)\
+                .eq("accommodation_name", reservation['accommodation_name'])\
+                .execute()
+            
+            if tmpl_res.data:
+                 content = tmpl_res.data[0]['content']
+            else:
+                 raise HTTPException(status_code=404, detail=f"No template found for type '{req.template_type}'")
 
     if not content:
         raise HTTPException(status_code=400, detail="Content could not be determined")
