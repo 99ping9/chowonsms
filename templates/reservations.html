@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- FullCalendar CSS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<style>
+    /* Custom Scrollbar for modern look */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* FullCalendar Customization */
+    .fc {
+        font-family: 'Noto Sans KR', sans-serif;
+        --fc-border-color: rgba(226, 232, 240, 0.6);
+        --fc-page-bg-color: transparent;
+    }
+
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+        border-color: var(--fc-border-color);
+    }
+
+    .fc-col-header-cell {
+        background-color: rgba(248, 250, 252, 0.5);
+        padding: 12px 0;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .fc-daygrid-day-number {
+        color: #64748b;
+        font-weight: 500;
+        padding: 8px;
+    }
+
+    .fc-event {
+        border: none !important;
+        border-radius: 6px;
+        padding: 2px 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+
+    .fc-event:hover {
+        transform: scale(1.02);
+    }
+
+    .fc-toolbar-title {
+        font-size: 1.5rem !important;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .fc-button {
+        background-color: white !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+        font-weight: 500 !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        text-transform: capitalize;
+        border-radius: 0.5rem !important;
+    }
+
+    .fc-button:hover {
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    .fc-button-active {
+        background-color: #eff6ff !important;
+        color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+    }
+
+    /* Weekend Styling */
+    .fc-day-sun {
+        background-color: #fef2f2 !important;
+    }
+
+    .fc-day-sat {
+        background-color: #eff6ff !important;
+    }
+
+    .fc-day-sun .fc-daygrid-day-number,
+    .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+        color: #ef4444 !important;
+    }
+
+    .fc-day-sat .fc-daygrid-day-number,
+    .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
+        color: #3b82f6 !important;
+    }
+</style>
+
+<div class="space-y-8">
+    <!-- 1. Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">예약 현황</h1>
+            <p class="mt-2 text-gray-500">
+                오늘의 입실 고객과 전체 스케줄을 한눈에 확인하세요.
+            </p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <!-- Status Cards or Summary could go here -->
+        </div>
+    </div>
+
+    <!-- 2. 예약 등록 폼 -->
+    <div
+        class="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50">
+        <div class="px-6 py-6 sm:p-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <span class="bg-indigo-100 text-indigo-600 rounded-lg p-2 mr-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </span>
+                새 예약 등록
+            </h3>
+
+            <form id="reservationForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Name -->
+                    <div class="col-span-1">
+                        <label for="guest_name" class="block text-sm font-semibold text-gray-700 mb-2">예약자 성함</label>
+                        <input type="text" name="guest_name" id="guest_name" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 placeholder-gray-400"
+                            placeholder="홍길동">
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-span-1">
+                        <label for="phone_number" class="block text-sm font-semibold text-gray-700 mb-2">전화번호</label>
+                        <input type="text" name="phone_number" id="phone_number" placeholder="01012345678" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 placeholder-gray-400">
+                    </div>
+
+                    <!-- Accommodation -->
+                    <div class="col-span-1">
+                        <label for="accommodation_name" class="block text-sm font-semibold text-gray-700 mb-2">숙소
+                            선택</label>
+                        <div class="relative">
+                            <select id="accommodation_name" name="accommodation_name"
+                                class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 appearance-none cursor-pointer">
+                                <option>초원고택1</option>
+                                <option>초원고택2</option>
+                                <option>초원고택3</option>
+                                <option>초원별장(정글)</option>
+                                <option>초원별장(시네)</option>
+                                <option>초원브릿지</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Memo (Hidden in simple view, or merged) -->
+                    <!-- We'll keep layout clean, move dates next -->
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                    <!-- Checkin -->
+                    <div class="col-span-1">
+                        <label for="checkin_date" class="block text-sm font-semibold text-gray-700 mb-2">입실일</label>
+                        <input type="date" name="checkin_date" id="checkin_date" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 text-gray-600">
+                    </div>
+
+                    <!-- Checkout -->
+                    <div class="col-span-1">
+                        <label for="checkout_date" class="block text-sm font-semibold text-gray-700 mb-2">퇴실일</label>
+                        <input type="date" name="checkout_date" id="checkout_date" required
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 text-gray-600">
+                    </div>
+
+                    <!-- Memo -->
+                    <div class="col-span-1 md:col-span-2">
+                        <label for="memo" class="block text-sm font-semibold text-gray-700 mb-2">메모 (선택)</label>
+                        <input type="text" id="memo" name="memo" placeholder="특이사항 입력"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50/50 border-transparent focus:border-indigo-500 focus:bg-white focus:ring-0 text-sm shadow-sm transition-all duration-200 placeholder-gray-400">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button type="submit"
+                        class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg transform transition hover:-translate-y-0.5">
+                        예약 등록하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2.5 Filter Section -->
+    <div
+        class="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-6 mb-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            숙소 필터
+        </h3>
+        <div class="flex flex-wrap items-center gap-4">
+            <!-- Select All -->
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="filter-all" checked
+                    class="form-checkbox h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700 font-medium">전체 선택</span>
+            </label>
+            <div class="h-6 w-px bg-gray-300 mx-2"></div>
+            <!-- Individual Filters -->
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원고택1" checked
+                    class="form-checkbox h-5 w-5 text-emerald-500 rounded border-gray-300 focus:ring-emerald-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원고택1</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원고택2" checked
+                    class="form-checkbox h-5 w-5 text-emerald-500 rounded border-gray-300 focus:ring-emerald-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원고택2</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원고택3" checked
+                    class="form-checkbox h-5 w-5 text-emerald-500 rounded border-gray-300 focus:ring-emerald-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원고택3</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원별장(시네)" checked
+                    class="form-checkbox h-5 w-5 text-amber-500 rounded border-gray-300 focus:ring-amber-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원별장(시네)</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원별장(정글)" checked
+                    class="form-checkbox h-5 w-5 text-amber-500 rounded border-gray-300 focus:ring-amber-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원별장(정글)</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="accommodation-filter" value="초원브릿지" checked
+                    class="form-checkbox h-5 w-5 text-violet-500 rounded border-gray-300 focus:ring-violet-400 transition duration-150 ease-in-out">
+                <span class="ml-2 text-gray-700">초원브릿지</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- 3. 예약 달력 (FullCalendar) -->
+    <div
+        class="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-6 sm:p-8">
+        <div id='calendar' class="h-[700px]"></div>
+    </div>
+</div>
+
+<!-- Edit Modal (Glassmorphism) -->
+<div id="editModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/30 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div
+                class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+                <div class="px-6 py-6 lg:px-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6" id="modal-title">예약 상세 정보</h3>
+                    <form id="editForm" class="space-y-5">
+                        <input type="hidden" id="edit_id" name="id">
+
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">숙소</label>
+                            <select id="edit_accommodation_name" name="accommodation_name"
+                                class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none">
+                                <option>초원고택1</option>
+                                <option>초원고택2</option>
+                                <option>초원고택3</option>
+                                <option>초원별장(정글)</option>
+                                <option>초원별장(시네)</option>
+                                <option>초원브릿지</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">예약자</label>
+                                <input type="text" id="edit_guest_name" name="guest_name"
+                                    class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">전화번호</label>
+                                <input type="text" id="edit_phone_number" name="phone_number"
+                                    class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">입실일</label>
+                                <input type="date" id="edit_checkin_date" name="checkin_date"
+                                    class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none">
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">퇴실일</label>
+                                <input type="date" id="edit_checkout_date" name="checkout_date"
+                                    class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">메모</label>
+                            <textarea id="edit_memo" name="memo" rows="3"
+                                class="w-full px-3 py-2 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none border-none"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-50/50 px-6 py-4 flex flex-row-reverse gap-3">
+                    <button type="button" onclick="updateReservation()"
+                        class="inline-flex w-full justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:w-auto">
+                        수정 내용 저장
+                    </button>
+                    <button type="button" onclick="deleteCurrentReservation()"
+                        class="inline-flex w-full justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-100 hover:bg-red-50 sm:w-auto">
+                        예약 삭제
+                    </button>
+                    <button type="button" onclick="closeEditModal()"
+                        class="inline-flex w-full justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 sm:w-auto">
+                        취소
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FullCalendar JS -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+    let calendar;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,listWeek'
+            },
+            eventDisplay: 'block', // Force block display for events
+            events: async function (info, successCallback, failureCallback) {
+                try {
+                    // 1. Fetch Reservations
+                    const res = await fetch('/reservations/');
+                    const data = await res.json();
+
+                    // Filter Logic
+                    const checkboxes = document.querySelectorAll('input[name="accommodation-filter"]');
+                    const selectedAccommodations = Array.from(checkboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+
+                    const filteredData = data.filter(r => selectedAccommodations.includes(r.accommodation_name));
+
+                    const reservationEvents = filteredData.map(r => {
+                        // 숙소별 색상 지정 (파스텔 톤)
+                        let color = '#3b82f6'; // blue
+                        if (r.accommodation_name.includes('고택')) color = '#10b981'; // emerald
+                        if (r.accommodation_name.includes('별장')) color = '#f59e0b'; // amber
+                        if (r.accommodation_name.includes('브릿지')) color = '#8b5cf6'; // violet
+
+                        return {
+                            id: r.id,
+                            title: `${r.guest_name} (${r.accommodation_name})`,
+                            start: r.checkin_date,
+                            end: r.checkout_date,
+                            allDay: true,
+                            backgroundColor: color,
+                            borderColor: color,
+                            extendedProps: { ...r }
+                        };
+                    });
+
+                    // 2. Korean Holidays (2024-2025)
+                    const holidays = [
+                        // 2024
+                        { title: '신정', date: '2024-01-01' },
+                        { title: '설날', date: '2024-02-09' },
+                        { title: '설날', date: '2024-02-10' },
+                        { title: '설날', date: '2024-02-11' },
+                        { title: '대체공휴일', date: '2024-02-12' },
+                        { title: '삼일절', date: '2024-03-01' },
+                        { title: '선거일', date: '2024-04-10' },
+                        { title: '어린이날', date: '2024-05-05' },
+                        { title: '대체공휴일', date: '2024-05-06' },
+                        { title: '부처님오신날', date: '2024-05-15' },
+                        { title: '현충일', date: '2024-06-06' },
+                        { title: '광복절', date: '2024-08-15' },
+                        { title: '추석', date: '2024-09-16' },
+                        { title: '추석', date: '2024-09-17' },
+                        { title: '추석', date: '2024-09-18' },
+                        { title: '개천절', date: '2024-10-03' },
+                        { title: '한글날', date: '2024-10-09' },
+                        { title: '크리스마스', date: '2024-12-25' },
+
+                        // 2025 (Estimates & Fixed)
+                        { title: '신정', date: '2025-01-01' },
+                        { title: '설날', date: '2025-01-28' },
+                        { title: '설날', date: '2025-01-29' },
+                        { title: '설날', date: '2025-01-30' },
+                        { title: '삼일절', date: '2025-03-01' },
+                        { title: '대체공휴일', date: '2025-03-03' },
+                        { title: '어린이날', date: '2025-05-05' },
+                        { title: '부처님오신날', date: '2025-05-05' }, // 겹침
+                        { title: '대체공휴일', date: '2025-05-06' },
+                        { title: '현충일', date: '2025-06-06' },
+                        { title: '광복절', date: '2025-08-15' },
+                        { title: '추석', date: '2025-10-05' },
+                        { title: '추석', date: '2025-10-06' },
+                        { title: '추석', date: '2025-10-07' },
+                        { title: '개천절', date: '2025-10-03' },
+                        { title: '한글날', date: '2025-10-09' },
+                        { title: '크리스마스', date: '2025-12-25' },
+
+                        // 2026
+                        { title: '신정', date: '2026-01-01' },
+                        { title: '설날', date: '2026-02-16' },
+                        { title: '설날', date: '2026-02-17' },
+                        { title: '설날', date: '2026-02-18' },
+                        { title: '삼일절', date: '2026-03-01' },
+                        { title: '대체공휴일', date: '2026-03-02' },
+                        { title: '어린이날', date: '2026-05-05' },
+                        { title: '부처님오신날', date: '2026-05-24' },
+                        { title: '대체공휴일', date: '2026-05-25' },
+                        { title: '현충일', date: '2026-06-06' },
+                        { title: '광복절', date: '2026-08-15' },
+                        { title: '추석', date: '2026-09-24' },
+                        { title: '추석', date: '2026-09-25' },
+                        { title: '추석', date: '2026-09-26' },
+                        { title: '개천절', date: '2026-10-03' },
+                        { title: '한글날', date: '2026-10-09' },
+                        { title: '크리스마스', date: '2026-12-25' }
+                    ];
+
+                    const holidayEvents = holidays.map(h => ({
+                        title: h.title,
+                        start: h.date,
+                        allDay: true,
+                        display: 'background', // 배경색으로 표시
+                        backgroundColor: '#fee2e2', // 붉은 배경 (진하게)
+                        classNames: ['holiday-event'] // 추가 스타일링용 클래스
+                    }));
+
+                    const holidayTextEvents = holidays.map(h => ({
+                        title: `🎉 ${h.title}`,
+                        start: h.date,
+                        allDay: true,
+                        backgroundColor: 'transparent',
+                        borderColor: 'transparent',
+                        textColor: '#ef4444',
+                        classNames: ['font-bold']
+                    }));
+
+                    successCallback([...holidayEvents, ...holidayTextEvents, ...reservationEvents]);
+                } catch (err) {
+                    failureCallback(err);
+                }
+            },
+            eventClick: function (info) {
+                openEditModal(info.event);
+            }
+        });
+        calendar.render();
+
+        // 3. Filter Event Listeners
+        const filterAll = document.getElementById('filter-all');
+        const filterCheckboxes = document.querySelectorAll('input[name="accommodation-filter"]');
+
+        // "Select All" click
+        filterAll.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            filterCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+            });
+            calendar.refetchEvents();
+        });
+
+        // Individual Checkbox click
+        filterCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                // Determine if all are checked
+                const allChecked = Array.from(filterCheckboxes).every(c => c.checked);
+                filterAll.checked = allChecked;
+
+                // If not all valid, maybe uncheck "All"? Yes.
+                // But also if user manually checks them all one by one, "Select All" should become checked.
+
+                calendar.refetchEvents();
+            });
+        });
+    });
+
+    // --- Create ---
+    document.getElementById('reservationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const res = await fetch('/reservations/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert('예약이 등록되었습니다.');
+                e.target.reset();
+                calendar.refetchEvents(); // 달력 새로고침
+            } else {
+                alert('등록 실패: ' + await res.text());
+            }
+        } catch (err) {
+            alert('오류 발생: ' + err);
+        }
+    });
+
+    // --- Modal Logic ---
+    function openEditModal(event) {
+        const props = event.extendedProps;
+        document.getElementById('edit_id').value = event.id;
+        document.getElementById('edit_guest_name').value = props.guest_name;
+        document.getElementById('edit_phone_number').value = props.phone_number;
+        document.getElementById('edit_accommodation_name').value = props.accommodation_name;
+        document.getElementById('edit_checkin_date').value = props.checkin_date;
+        document.getElementById('edit_checkout_date').value = props.checkout_date;
+        document.getElementById('edit_memo').value = props.memo || '';
+
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    // --- Update ---
+    async function updateReservation() {
+        const id = document.getElementById('edit_id').value;
+        const form = document.getElementById('editForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const res = await fetch(`/reservations/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert('수정되었습니다.');
+                closeEditModal();
+                calendar.refetchEvents();
+            } else {
+                alert('수정 실패: ' + await res.text());
+            }
+        } catch (err) {
+            alert('오류 발생: ' + err);
+        }
+    }
+
+    // --- Delete ---
+    async function deleteCurrentReservation() {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+        const id = document.getElementById('edit_id').value;
+        try {
+            const res = await fetch(`/reservations/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('삭제되었습니다.');
+                closeEditModal();
+                calendar.refetchEvents();
+            } else {
+                alert('삭제 실패');
+            }
+        } catch (err) {
+            alert('오류 발생');
+        }
+    }
+</script>
+{% endblock %}
