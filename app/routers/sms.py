@@ -17,6 +17,7 @@ class ManualSendRequest(BaseModel):
     template_type: str # 'checkin', 'checkout', 'custom', 'common'
     custom_content: Optional[str] = None
     template_id: Optional[int] = None
+    subject: Optional[str] = None
 
 @router.post("/send-manual")
 async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get_supabase)):
@@ -27,8 +28,10 @@ async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get
     
     reservation = res_data.data
     
-    # 2. 메시지 내용 결정
+    # 2. 메시지 내용 및 제목 결정
     content = ""
+    subject = req.subject  # 요청에 포함된 제목 우선 사용
+    
     if req.custom_content:
         content = req.custom_content
     elif req.template_type == 'common':
@@ -36,29 +39,30 @@ async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get
          tmpl_res = supabase.table("message_templates").select("*").eq("trigger_type", "common").execute()
          if tmpl_res.data:
              content = tmpl_res.data[0]['content']
+             if not subject and tmpl_res.data[0].get('subject'): # 제목이 없으면 템플릿 제목 사용
+                 subject = tmpl_res.data[0]['subject']
          else:
-             # Fallback or Error
              content = "[공지사항] {name}님, 초원SMS에서 알려드립니다.\n\n(관리자 페이지에서 공통 템플릿 내용을 설정해주세요.)" 
     else:
-        # DB에서 적절한 템플릿 찾기
-        # trigger_type이 req.template_type을 포함하고, accommodation_name이 일치하거나 'all'인 것
-        # 정확한 매칭을 위해선 template_id를 받는게 가장 확실함
-        
         if req.template_id:
             tmpl_res = supabase.table("message_templates").select("*").eq("id", req.template_id).single().execute()
             if tmpl_res.data:
                 content = tmpl_res.data['content']
+                if not subject and tmpl_res.data.get('subject'):
+                    subject = tmpl_res.data['subject']
             else:
                 raise HTTPException(status_code=404, detail="Template not found")
         else:
             # Fallback: Search by trigger_type and accommodation_name
-            tmpl_res = supabase.table("message_templates").select("content")\
+            tmpl_res = supabase.table("message_templates").select("*")\
                 .eq("trigger_type", req.template_type)\
                 .eq("accommodation_name", reservation['accommodation_name'])\
                 .execute()
             
             if tmpl_res.data:
                  content = tmpl_res.data[0]['content']
+                 if not subject and tmpl_res.data[0].get('subject'):
+                     subject = tmpl_res.data[0]['subject']
             else:
                  raise HTTPException(status_code=404, detail=f"No template found for type '{req.template_type}'")
 
@@ -70,9 +74,19 @@ async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get
         name=reservation['guest_name'],
         accommodation=reservation['accommodation_name']
     )
+    
+    formatted_subject = None
+    if subject:
+        try:
+            formatted_subject = subject.format(
+                name=reservation['guest_name'],
+                accommodation=reservation['accommodation_name']
+            )
+        except Exception:
+            formatted_subject = subject # 포맷팅 실패 시 원본 사용
 
     # 4. 발송
-    send_result = send_sms(reservation['phone_number'], formatted_content)
+    send_result = send_sms(reservation['phone_number'], formatted_content, subject=formatted_subject)
     
     # 5. 로그 기록
     status = 'success'

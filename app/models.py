@@ -27,12 +27,14 @@ class MessageTemplateBase(BaseModel):
     accommodation_name: str
     trigger_type: str
     send_time: time
+    subject: Optional[str] = None
     content: str
     
 class MessageTemplateCreate(MessageTemplateBase):
     pass
 
 class MessageTemplateUpdate(BaseModel):
+    subject: Optional[str] = None
     content: str
     send_time: time
     apply_all: bool = False

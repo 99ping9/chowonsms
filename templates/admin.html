@@ -89,6 +89,7 @@
                             트리거</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">발송 시간
                         </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">제목</th>
                         <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">내용</th>
                         <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">작업
                         </th>
@@ -129,6 +130,12 @@
                     </div>
                 </div>
                 <p class="mt-1 text-xs text-red-400">* 발송 시간은 변경할 수 없습니다.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">제목 (선택사항)</label>
+                <input type="text" id="editSubject" placeholder="LMS 제목 (비워두면 SMS 단문 발송)"
+                    class="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm text-sm">
             </div>
 
             <div>
@@ -290,6 +297,9 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     ${t.send_time}
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${t.subject || '-'}
+                </td>
                 <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${t.content}">
                     ${t.content}
                 </td>
@@ -309,6 +319,7 @@
         document.getElementById('editAccName').value = t.accommodation_name;
         document.getElementById('editTime').value = t.send_time;
         document.getElementById('editContent').value = t.content;
+        document.getElementById('editSubject').value = t.subject || '';
 
         let groupName = "기타";
         let showCheckbox = true;
@@ -344,6 +355,7 @@
         const id = document.getElementById('editId').value;
         const send_time = document.getElementById('editTime').value;
         const content = document.getElementById('editContent').value;
+        const subject = document.getElementById('editSubject').value;
         const apply_all = document.getElementById('applyAll').checked;
 
         try {
@@ -353,6 +365,7 @@
                 body: JSON.stringify({
                     content: content,
                     send_time: send_time,
+                    subject: subject,
                     apply_all: apply_all
                 })
             });

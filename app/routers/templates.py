@@ -24,6 +24,7 @@ async def update_template(template_id: int, template: MessageTemplateUpdate, sup
     trigger_type = target_data['trigger_type']
     
     update_payload = {
+        "subject": template.subject,
         "content": template.content,
         "send_time": str(template.send_time)
     }

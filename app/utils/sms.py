@@ -36,10 +36,10 @@ def get_headers():
     }
 
 # 4. 문자 발송 함수
-def send_sms(to_number: str, text: str):
+def send_sms(to_number: str, text: str, subject: str = None):
     # API 키가 없는 경우 (로컬 테스트 중 실수 방지)
     if not SOLAPI_API_KEY or not SOLAPI_SECRET_KEY:
-        print(f"[MOCK SEND] To: {to_number}, Content: {text}")
+        print(f"[MOCK SEND] To: {to_number}, Subject: {subject}, Content: {text}")
         return {"status": "mock_success", "messageId": "mock_id"}
 
     url = "https://api.solapi.com/messages/v4/send"
@@ -47,12 +47,17 @@ def send_sms(to_number: str, text: str):
     # [안전장치] 전화번호에서 하이픈(-) 제거
     clean_number = to_number.replace("-", "").strip()
 
+    message_payload = {
+        "to": clean_number,
+        "from": SOLAPI_SENDER_NUMBER,
+        "text": text
+    }
+
+    if subject:
+        message_payload["subject"] = subject
+
     payload = {
-        "message": {
-            "to": clean_number,
-            "from": SOLAPI_SENDER_NUMBER,
-            "text": text
-        }
+        "message": message_payload
     }
 
     try:
