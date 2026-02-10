@@ -68,6 +68,7 @@ async def cron_job(manual_time: str = None, supabase: Client = Depends(get_supab
             candidate_triggers.extend([t for t in templates if 'multinight' in t['trigger_type']])
             
         # (4) 숙소 이름 일치 여부 필터링 (공통메세지 포함)
+        # [Customer Request] '공통메세지'는 모든 숙소(초원고택1~3, 별장(시네/정글), 브릿지)에 적용됨
         res_accommodation = res['accommodation_name']
         candidate_triggers = [
             t for t in candidate_triggers 
@@ -114,16 +115,16 @@ async def process_sending(supabase, reservation, template, now_kst):
     today_start = now_kst.strftime("%Y-%m-%d 00:00:00")
     today_end = now_kst.strftime("%Y-%m-%d 23:59:59")
     
-    check_log = supabase.table("sms_logs").select("id")\
-        .eq("reservation_id", reservation_id)\
-        .eq("trigger_type", trigger_type)\
-        .gte("sent_at", today_start)\
-        .lte("sent_at", today_end)\
-        .execute()
+    # [Customer Request] 중복 발송 제한 해제 (2026-02-10)
+    # check_log = supabase.table("sms_logs").select("id")\
+    #     .eq("reservation_id", reservation_id)\
+    #     .eq("trigger_type", trigger_type)\
+    #     .gte("sent_at", today_start)\
+    #     .lte("sent_at", today_end)\
+    #     .execute()
         
-    if check_log.data and len(check_log.data) > 0:
-        # 이미 발송된 건
-        return False
+    # if check_log.data and len(check_log.data) > 0:
+    #     return False
 
     # 메시지 내용 포맷팅
     content = template['content'].format(
