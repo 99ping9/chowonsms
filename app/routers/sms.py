@@ -53,16 +53,40 @@ async def send_manual_sms(req: ManualSendRequest, supabase: Client = Depends(get
             else:
                 raise HTTPException(status_code=404, detail="Template not found")
         else:
-            # Fallback: Search by trigger_type and accommodation_name
+            # Fallback: Search by trigger_type and (accommodation_name OR '공통메세지')
+            # Supabase conditional query is complex, simpler to fetch by trigger_type and filter in code or use `in_` for accommodation
             tmpl_res = supabase.table("message_templates").select("*")\
                 .eq("trigger_type", req.template_type)\
-                .eq("accommodation_name", reservation['accommodation_name'])\
+                .in_("accommodation_name", [reservation['accommodation_name'], "공통메세지"])\
                 .execute()
             
             if tmpl_res.data:
-                 content = tmpl_res.data[0]['content']
-                 if not subject and tmpl_res.data[0].get('subject'):
-                     subject = tmpl_res.data[0]['subject']
+                 # If multiple found, prefer specific implementation if it existed (but here we assume distinct or specific overrides)
+                 # We'll just take the first one, or prioritize specific if needed.
+                 # Let's sort to prioritize specific: if name == res['acc_name'] comes first?
+                 # Actually, usually specific is better.
+                 found_templates = tmpl_res.data
+                 target_template = None
+                 
+                 # Try to find exact match first
+                 for t in found_templates:
+                     if t['accommodation_name'] == reservation['accommodation_name']:
+                         target_template = t
+                         break
+                 
+                 # If not found, use common
+                 if not target_template:
+                     for t in found_templates:
+                         if t['accommodation_name'] == '공통메세지':
+                             target_template = t
+                             break
+                 
+                 if target_template:
+                     content = target_template['content']
+                     if not subject and target_template.get('subject'):
+                         subject = target_template['subject']
+                 else:
+                     raise HTTPException(status_code=404, detail=f"No suitable template found for type '{req.template_type}'")
             else:
                  raise HTTPException(status_code=404, detail=f"No template found for type '{req.template_type}'")
 

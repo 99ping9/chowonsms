@@ -57,28 +57,28 @@
 
         <!-- Category Tabs -->
         <div class="border-b border-gray-100 p-2 overflow-x-auto">
-            <nav class="flex space-x-2" aria-label="Tabs">
-                <button onclick="filterTemplates('all')" id="tab-all"
-                    class="tab-btn px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200">
+            <div class="flex space-x-1 p-1 bg-gray-50/50 rounded-xl mb-6">
+                <button onclick="filterTemplates('all')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900 active-tab">
                     전체
                 </button>
-                <button onclick="filterTemplates('전체공용')" id="tab-전체공용"
-                    class="tab-btn px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200">
-                    전체공용
-                </button>
-                <button onclick="filterTemplates('초원고택')" id="tab-초원고택"
-                    class="tab-btn px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200">
+                <button onclick="filterTemplates('초원고택')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
                     초원고택
                 </button>
-                <button onclick="filterTemplates('초원별장')" id="tab-초원별장"
-                    class="tab-btn px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200">
+                <button onclick="filterTemplates('초원별장')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
                     초원별장
                 </button>
-                <button onclick="filterTemplates('초원브릿지')" id="tab-초원브릿지"
-                    class="tab-btn px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200">
+                <button onclick="filterTemplates('초원브릿지')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
                     초원브릿지
                 </button>
-            </nav>
+                <button onclick="filterTemplates('공통메세지')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    공통메세지
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -144,16 +144,7 @@
                     class="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm text-sm leading-relaxed"></textarea>
             </div>
 
-            <div class="flex items-start">
-                <div class="flex items-center h-5">
-                    <input id="applyAll" type="checkbox"
-                        class="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded transition-all">
-                </div>
-                <div class="ml-3 text-sm">
-                    <label for="applyAll" class="font-medium text-gray-700">그룹 일괄 적용</label>
-                    <p class="text-gray-500">같은 그룹의 모든 숙소에 이 내용을 동일하게 적용합니다. (<span id="groupNameDisplay"></span>)</p>
-                </div>
-            </div>
+            <!-- Group Apply Removed -->
         </div>
 
         <div class="px-8 py-5 bg-gray-50/50 rounded-b-3xl flex justify-end space-x-3">
@@ -224,45 +215,47 @@
     }
 
     let templatesData = [];
-    let currentFilter = '전체공용'; // Default to Common
+    let currentCategory = 'all';
 
     const triggerMap = {
-        'checkin_0900': '맛집안내(입실일 09:00)',
+        'checkin_food_0900': '맛집안내(입실일 09:00)',
         'checkin_1900': '전체공통 저녁안내(입실일 19:00)',
         'checkout_0900': '전체공통 퇴실안내(퇴실일 09:00)',
         'checkout_1700': '전체공통 리뷰요청(퇴실일 17:00)',
         'multinight_0900': '연박안내(연박일 오전 09:00)',
-        'checkin_0901': '체크인안내(입실일 09:00)',
-        'checkin_1450': '입실안내(입실일 14:50)'
+        'checkin_guide_0900': '체크인안내(입실일 09:00)',
+        'checkin_1450': '입실안내(입실일 14:50)',
+        'checkout_1900': '후기작성안내(페이백, 퇴실일 19:00)'
     };
-
-    const commonTriggers = [
-        'checkin_0900', 'checkin_1900', 'checkout_0900', 'checkout_1700', 'multinight_0900'
-    ];
 
     async function loadTemplates() {
         const tbody = document.getElementById('templateList');
         try {
             const res = await fetch('/templates/');
             templatesData = await res.json();
-            filterTemplates(currentFilter);
+            filterTemplates(currentCategory);
         } catch (err) {
             console.error(err);
         }
     }
 
-    function filterTemplates(filter) {
-        currentFilter = filter;
+    function filterTemplates(category) {
+        currentCategory = category;
 
-        // Tab UI update
-        ['all', '전체공용', '초원고택', '초원별장', '초원브릿지'].forEach(f => {
-            const btn = document.getElementById(`tab-${f}`);
-            if (f === filter) {
-                btn.classList.add('border-green-500', 'text-green-600');
-                btn.classList.remove('border-transparent', 'text-gray-500');
-            } else {
-                btn.classList.remove('border-green-500', 'text-green-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
+        // Update tabs UI
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active-tab', 'text-gray-900', 'bg-white', 'shadow-sm');
+            btn.classList.add('text-gray-500'); // Reset to default
+
+            // Check if this button corresponds to the selected category
+            // Normalize text for comparison
+            const btnText = btn.innerText.trim();
+            if (
+                (category === 'all' && btnText === '전체') ||
+                (category === btnText)
+            ) {
+                btn.classList.add('active-tab', 'text-gray-900', 'bg-white', 'shadow-sm');
+                btn.classList.remove('text-gray-500');
             }
         });
 
@@ -270,28 +263,29 @@
     }
 
     function renderTemplates() {
-        const tbody = document.getElementById('templateList');
-        let filtered = templatesData;
+        if (!templatesData) return;
 
-        if (currentFilter === 'all') {
-            // Show everything
-        } else if (currentFilter === '전체공용') {
-            // Show only the '전체공용' master templates
-            filtered = templatesData.filter(t => t.accommodation_name === '전체공용');
-        } else {
-            // Show specific accommodation templates, BUT hide the common ones
-            filtered = templatesData.filter(t =>
-                t.accommodation_name.includes(currentFilter) &&
-                !commonTriggers.includes(t.trigger_type)
-            );
-        }
+        const tbody = document.getElementById('templateList');
+
+        const filtered = templatesData.filter(t => {
+            if (currentCategory === 'all') return true;
+            return t.accommodation_name === currentCategory;
+        });
+
+        // Sort by accommodation name then trigger type
+        filtered.sort((a, b) => {
+            if (a.accommodation_name < b.accommodation_name) return -1;
+            if (a.accommodation_name > b.accommodation_name) return 1;
+            return 0;
+        });
 
         tbody.innerHTML = filtered.map(t => {
             const friendlyTrigger = triggerMap[t.trigger_type] || t.trigger_type;
+            const rowClass = t.accommodation_name === '공통메세지' ? 'bg-indigo-50/50' : '';
             return `
-            <tr>
+            <tr class="${rowClass}">
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${t.accommodation_name}</div>
+                    <div class="text-sm font-bold text-gray-900">${t.accommodation_name}</div>
                     <div class="text-sm text-gray-500">${friendlyTrigger}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -321,29 +315,7 @@
         document.getElementById('editContent').value = t.content;
         document.getElementById('editSubject').value = t.subject || '';
 
-        let groupName = "기타";
-        let showCheckbox = true;
-
-        if (t.accommodation_name === "전체공용") {
-            groupName = "전 숙소 공통 적용 (자동)";
-            showCheckbox = false;
-        } else if (t.accommodation_name.includes("초원고택")) {
-            groupName = "초원고택 전체";
-        } else if (t.accommodation_name.includes("초원별장")) {
-            groupName = "초원별장 전체";
-        } else if (t.accommodation_name.includes("초원브릿지")) {
-            groupName = "초원브릿지";
-        }
-
-        document.getElementById('groupNameDisplay').innerText = groupName;
-        document.getElementById('applyAll').checked = false;
-
-        if (showCheckbox) {
-            document.getElementById('applyAll').parentElement.classList.remove('hidden');
-        } else {
-            document.getElementById('applyAll').parentElement.classList.add('hidden');
-        }
-
+        // Removed Group Apply Logic
         document.getElementById('editModal').classList.remove('hidden');
     }
 
@@ -356,7 +328,8 @@
         const send_time = document.getElementById('editTime').value;
         const content = document.getElementById('editContent').value;
         const subject = document.getElementById('editSubject').value;
-        const apply_all = document.getElementById('applyAll').checked;
+
+        // Removed apply_all
 
         try {
             const res = await fetch(`/templates/${id}`, {
@@ -366,7 +339,7 @@
                     content: content,
                     send_time: send_time,
                     subject: subject,
-                    apply_all: apply_all
+                    apply_all: false // Always false
                 })
             });
 

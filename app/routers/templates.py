@@ -29,35 +29,8 @@ async def update_template(template_id: int, template: MessageTemplateUpdate, sup
         "send_time": str(template.send_time)
     }
 
-    if template.apply_all:
-        # 그룹 식별 로직
-        group_prefix = ""
-        if "초원고택" in acc_name:
-            group_prefix = "초원고택"
-        elif "초원별장" in acc_name:
-            group_prefix = "초원별장"
-        elif "초원브릿지" in acc_name:
-            group_prefix = "초원브릿지"
-            
-        if group_prefix:
-            # 같은 그룹 + 같은 트리거인 모든 템플릿 업데이트
-            # like 쿼리가 supabase-py에서 ilike or like로 사용 가능
-            # 여기서는 간단히 모든 템플릿 가져와서 필터링 업데이트 하거나, 
-            # 쿼리로 해결. .like("accommodation_name", f"{group_prefix}%") 사용
-            response = supabase.table("message_templates").update(update_payload)\
-                .eq("trigger_type", trigger_type)\
-                .ilike("accommodation_name", f"{group_prefix}%")\
-                .execute()
-            return response.data[0] if response.data else {}
-            
-    # 단일 업데이트 (또는 전체공용 원본 업데이트)
+    # 단일 업데이트 (apply_all 로직 제거됨)
     response = supabase.table("message_templates").update(update_payload).eq("id", template_id).execute()
-    
-    # [NEW] 전체공용 템플릿 수정 시, 모든 숙소의 해당 트리거 템플릿 일괄 업데이트
-    if acc_name == '전체공용':
-        supabase.table("message_templates").update(update_payload)\
-            .eq("trigger_type", trigger_type)\
-            .neq("accommodation_name", "전체공용")\
-            .execute()
+
 
     return response.data[0]

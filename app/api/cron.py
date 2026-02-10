@@ -54,9 +54,12 @@ async def cron_job(supabase: Client = Depends(get_supabase)):
         if checkin_date < today_date < checkout_date:
             candidate_triggers.extend([t for t in templates if 'multinight' in t['trigger_type']])
             
-        # (4) 숙소 이름 일치 여부 필터링
+        # (4) 숙소 이름 일치 여부 필터링 (공통메세지 포함)
         res_accommodation = res['accommodation_name']
-        candidate_triggers = [t for t in candidate_triggers if t['accommodation_name'] == res_accommodation]
+        candidate_triggers = [
+            t for t in candidate_triggers 
+            if t['accommodation_name'] == res_accommodation or t['accommodation_name'] == '공통메세지'
+        ]
         
         # [NEW] 실행 순서 보장을 위해 정렬 (trigger_type 기준 오름차순)
         # checkin_0900 (맛집) -> checkin_0901 (체크인안내) 순서 보장됨
