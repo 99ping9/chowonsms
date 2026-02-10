@@ -115,10 +115,21 @@ async def process_sending(supabase, reservation, template, now_kst):
         accommodation=reservation['accommodation_name']
     )
     
-    print(f"[SMS SENDING] To: {reservation['guest_name']}, Msg: {content[:20]}...")
+    subject = template.get('subject') # [NEW] 템플릿에서 제목 가져오기
+    formatted_subject = None
+    if subject:
+        try:
+            formatted_subject = subject.format(
+                name=reservation['guest_name'],
+                accommodation=reservation['accommodation_name']
+            )
+        except Exception:
+            formatted_subject = subject
+
+    print(f"[SMS SENDING] To: {reservation['guest_name']}, Subject: {formatted_subject}, Msg: {content[:20]}...")
     
     # SMS 발송 (Mock 또는 Real)
-    send_result = send_sms(reservation['phone_number'], content)
+    send_result = send_sms(reservation['phone_number'], content, subject=formatted_subject)
     
     # 성공 여부 판단
     status = 'success'
