@@ -12,21 +12,27 @@ router = APIRouter(prefix="/api", tags=["cron"])
 KST = pytz.timezone('Asia/Seoul')
 
 @router.get("/cron")
-async def cron_job(manual_time: str = None, supabase: Client = Depends(get_supabase)):
+async def cron_job(manual_time: str = None, manual_date: str = None, supabase: Client = Depends(get_supabase)):
     # 1. 현재 시간 (KST) 구하기
     now_kst = datetime.now(KST)
     
-    # [수동 테스트 모드]
-    # manual_time (예: "09:00")이 들어오면 강제로 시간을 조작
+    # [Customer Request] Manual Date for Testing (YYYY-MM-DD)
+    if manual_date:
+        try:
+            target_date = datetime.strptime(manual_date, "%Y-%m-%d").date()
+            now_kst = now_kst.replace(year=target_date.year, month=target_date.month, day=target_date.day)
+            print(f"[TEST] Manual Date used: {manual_date}")
+        except ValueError:
+             return {"status": "error", "message": "Invalid manual_date format. Use YYYY-MM-DD"}
+
+    # [Customer Request] Manual Time for Testing (HH:MM)
     if manual_time:
         try:
-            # 포맷 검증
-            mt = datetime.strptime(manual_time, "%H:%M")
-            # 오늘 날짜 + 입력된 시간으로 now_kst 교체 (타임존 유지)
-            now_kst = now_kst.replace(hour=mt.hour, minute=mt.minute, second=0, microsecond=0)
-            print(f"⚠️ Manual Test Mode: Simulating time as {manual_time}")
+            h, m = map(int, manual_time.split(':'))
+            now_kst = now_kst.replace(hour=h, minute=m, second=0, microsecond=0)
+            print(f"[TEST] Manual Time used: {manual_time}")
         except ValueError:
-            return {"status": "error", "message": "Invalid time format. Use HH:MM"}
+            return {"status": "error", "message": "Invalid manual_time format. Use HH:MM"}
 
     current_time_str = now_kst.strftime("%H:%M") # "09:00" 분 단위까지만
     today_date = now_kst.date()
