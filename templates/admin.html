@@ -269,6 +269,8 @@
 
         const filtered = templatesData.filter(t => {
             if (currentCategory === 'all') return true;
+            if (currentCategory === '초원고택') return t.accommodation_name.includes('초원고택');
+            if (currentCategory === '초원별장') return t.accommodation_name.includes('초원별장');
             return t.accommodation_name === currentCategory;
         });
 
