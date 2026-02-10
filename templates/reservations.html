@@ -359,10 +359,6 @@
                             <option value="checkout_1900">후기작성안내 (페이백, 퇴실일 19:00)</option>
                             <option value="multinight_0900">연박안내 (연박일 09:00)</option>
                         </select>
-                    </div>
-                    <div class="mt-2 flex gap-2">
-                        <input type="text" id="sms_subject" placeholder="문자 제목 (자동 입력)"
-                            class="flex-1 px-3 py-2 rounded-lg bg-gray-50 text-gray-900 text-sm focus:ring-2 focus:ring-indigo-500 border-none">
                         <button type="button" onclick="sendManualSMS()"
                             class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap">
                             전송
@@ -611,50 +607,13 @@
         document.getElementById('editModal').classList.add('hidden');
     }
 
-    // [NEW] 템플릿 선택 시 제목/내용 불러오기
-    document.getElementById('sms_template').addEventListener('change', async function () {
-        const type = this.value;
-        const accName = document.getElementById('edit_accommodation_name').value; // 현재 예약의 숙소명 (수정 모달에 있음)
-        const subjectInput = document.getElementById('sms_subject');
-
-        if (!type) {
-            subjectInput.value = '';
-            return;
-        }
-
-        // 전체공통 템플릿인 경우 (접두사로 구분하거나, DB 조회)
-        // 편의상 모든 템플릿 정보를 가져오는 API를 호출하거나, 
-        // /api/sms/preview?type=...&acc=... 같은걸 만들면 좋음.
-        // 여기서는 간단히 /templates/ API를 활용해서 필터링.
-
-        try {
-            const res = await fetch('/templates/');
-            if (!res.ok) return;
-            const templates = await res.json();
-
-            // 1. 매칭 시도 (숙소명 + 타입)
-            let matched = templates.find(t => t.trigger_type === type && t.accommodation_name === accName);
-
-            // 2. 없으면 공통메세지 + 타입
-            if (!matched) {
-                matched = templates.find(t => t.trigger_type === type && t.accommodation_name === '공통메세지');
-            }
-
-            if (matched && matched.subject) {
-                subjectInput.value = matched.subject;
-            } else {
-                subjectInput.value = ''; // 제목 없음
-            }
-
-        } catch (e) {
-            console.error("Failed to fetch template details", e);
-        }
-    });
+    // [NEW] 템플릿 선택 시 제목/내용 불러오기 - Subject Input removed, logic not needed for UI.
+    // Backend handles subject automatically if not provided.
 
     async function sendManualSMS() {
         const id = document.getElementById('edit_id').value;
         const templateType = document.getElementById('sms_template').value;
-        const subject = document.getElementById('sms_subject').value;
+        // const subject = document.getElementById('sms_subject').value; // Removed
 
         if (!id) {
             showCustomAlert('예약 정보를 찾을 수 없습니다.');
@@ -676,7 +635,7 @@
                 body: JSON.stringify({
                     reservation_id: parseInt(id),
                     template_type: templateType,
-                    subject: subject
+                    // subject: subject // Let backend handle it
                 })
             });
             if (res.ok) {
