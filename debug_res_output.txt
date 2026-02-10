@@ -1,0 +1,22 @@
+ID: 1
+Accommodation: 초원고택1
+Check-in: 2026-02-01
+Check-out: 2026-02-02
+Logs (0):
+--------------------
+ID: 2
+Accommodation: 초원고택2
+Check-in: 2026-02-11
+Check-out: 2026-02-13
+Logs (1):
+  - [SentAt: 2026-02-10T08:20:26.499518+00:00] Trigger: manual_checkin_guide_0900, Status: success
+--------------------
+ID: 3
+Accommodation: 초원고택1
+Check-in: 2026-02-09
+Check-out: 2026-02-11
+Logs (3):
+  - [SentAt: 2026-02-10T00:00:00+00:00] Trigger: checkin_food_0900, Status: success
+  - [SentAt: 2026-02-10T00:00:00+00:00] Trigger: checkin_guide_0900, Status: success
+  - [SentAt: 2026-02-10T00:00:00+00:00] Trigger: multinight_0900, Status: success
+--------------------
