@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<style>
+    .fc {
+        font-family: 'Noto Sans KR', sans-serif;
+        --fc-border-color: rgba(226, 232, 240, 0.6);
+        --fc-page-bg-color: transparent;
+    }
+
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+        border-color: var(--fc-border-color);
+    }
+
+    .fc-col-header-cell {
+        background-color: rgba(248, 250, 252, 0.5);
+        padding: 12px 0;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .fc-daygrid-day-number {
+        color: #64748b;
+        font-weight: 500;
+        padding: 8px;
+    }
+
+    .fc-event {
+        border: none !important;
+        border-radius: 6px;
+        padding: 2px 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: default;
+    }
+
+    .fc-toolbar-title {
+        font-size: 1.5rem !important;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .fc-button {
+        background-color: white !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+        font-weight: 500 !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        border-radius: 0.5rem !important;
+    }
+
+    .fc-button:hover {
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    .fc-button-active {
+        background-color: #eff6ff !important;
+        color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+    }
+
+    .fc-day-sun {
+        background-color: #fef2f2 !important;
+    }
+
+    .fc-day-sat {
+        background-color: #eff6ff !important;
+    }
+
+    .fc-day-sun .fc-daygrid-day-number,
+    .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+        color: #ef4444 !important;
+    }
+
+    .fc-day-sat .fc-daygrid-day-number,
+    .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
+        color: #3b82f6 !important;
+    }
+
+    .acc-card {
+        transition: all 0.15s;
+    }
+
+    .acc-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+</style>
+
+<div class="space-y-8">
+    <!-- Header -->
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">청소 내역</h1>
+        <p class="mt-2 text-gray-500">퇴실일 기준 숙소별 월간 청소 횟수를 확인합니다.</p>
+    </div>
+
+    <!-- Calendar -->
+    <div
+        class="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-6 sm:p-8">
+        <div id='calendar'></div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div
+        class="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-6 sm:p-8">
+        <!-- Summary Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h2 id="summaryTitle" class="text-xl font-bold text-gray-900">N월 청소내역 합산</h2>
+            <div class="flex items-center gap-2">
+                <button onclick="changeMonth(-1)"
+                    class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-600 font-medium text-sm hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    이전달
+                </button>
+                <button onclick="changeMonth(1)"
+                    class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-gray-600 font-medium text-sm hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1">
+                    다음달
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Grid -->
+        <div id="summaryGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="col-span-full text-center text-gray-400 py-8">로딩 중...</div>
+        </div>
+
+        <!-- Total -->
+        <div class="mt-6 pt-5 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-500 uppercase tracking-wider">총 청소 횟수</span>
+            <span id="totalCount"
+                class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">0회</span>
+        </div>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+    let calendar;
+    let currentYear, currentMonth; // 1-indexed month
+    let allReservations = [];
+
+    // 숙소 색상 맵
+    const colorMap = {
+        '초원고택1': '#10b981', '초원고택2': '#059669', '초원고택3': '#047857',
+        '초원별장(시네)': '#f59e0b', '초원별장(정글)': '#d97706',
+        '초원브릿지': '#8b5cf6',
+        '월명주택': '#f43f5e'
+    };
+
+    // 숙소 표시 순서
+    const accOrder = ['초원고택1', '초원고택2', '초원고택3', '초원별장(시네)', '초원별장(정글)', '초원브릿지', '월명주택'];
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        // 예약 데이터 미리 로드
+        await loadReservations();
+
+        const now = new Date();
+        currentYear = now.getFullYear();
+        currentMonth = now.getMonth() + 1; // 1-indexed
+
+        const calendarEl = document.getElementById('calendar');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'ko',
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth'
+            },
+            eventDisplay: 'block',
+            eventOrder: 'sortIdx',
+            events: function (info, successCallback, failureCallback) {
+                // 예약 달력과 동일하게 입실일~퇴실일 전날까지 bar로 표시
+                const sortPriority = {
+                    '초원고택1': 1, '초원고택2': 2, '초원고택3': 3,
+                    '초원별장(시네)': 4, '초원별장(정글)': 5,
+                    '초원브릿지': 6, '월명주택': 7
+                };
+                const events = allReservations.map(r => ({
+                    title: r.accommodation_name,
+                    start: r.checkin_date,
+                    end: r.checkout_date,
+                    allDay: true,
+                    backgroundColor: colorMap[r.accommodation_name] || '#6366f1',
+                    borderColor: colorMap[r.accommodation_name] || '#6366f1',
+                    sortIdx: sortPriority[r.accommodation_name] || 99,
+                }));
+                successCallback(events);
+            },
+            datesSet: function (info) {
+                // 달력 달 이동 시 - 현재 보이는 달 중앙 기준
+                const mid = new Date((info.start.getTime() + info.end.getTime()) / 2);
+                currentYear = mid.getFullYear();
+                currentMonth = mid.getMonth() + 1;
+                renderSummary();
+            }
+        });
+        calendar.render();
+    });
+
+    async function loadReservations() {
+        try {
+            const res = await fetch('/reservations/');
+            allReservations = await res.json();
+        } catch (e) {
+            console.error('예약 데이터 로드 실패', e);
+            allReservations = [];
+        }
+    }
+
+    function renderSummary() {
+        const grid = document.getElementById('summaryGrid');
+        const title = document.getElementById('summaryTitle');
+        const totalEl = document.getElementById('totalCount');
+
+        title.textContent = `${currentYear}년 ${currentMonth}월 청소내역 합산`;
+
+        // 해당 달의 퇴실 건수 집계
+        const counts = {};
+        accOrder.forEach(a => counts[a] = 0);
+
+        const ym = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+
+        allReservations.forEach(r => {
+            if (r.checkout_date && r.checkout_date.startsWith(ym)) {
+                if (counts[r.accommodation_name] !== undefined) {
+                    counts[r.accommodation_name]++;
+                } else {
+                    counts[r.accommodation_name] = 1;
+                }
+            }
+        });
+
+        let total = 0;
+        const cards = accOrder.map(acc => {
+            const cnt = counts[acc] || 0;
+            total += cnt;
+            const color = colorMap[acc] || '#6366f1';
+            return `
+            <div class="acc-card rounded-xl p-4 border border-gray-100 bg-white/60 backdrop-blur-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color:${color}"></div>
+                    <span class="text-sm font-semibold text-gray-700">${acc}</span>
+                </div>
+                <div class="text-2xl font-bold" style="color:${color}">${cnt}<span class="text-sm font-normal text-gray-400 ml-1">회</span></div>
+            </div>`;
+        });
+
+        grid.innerHTML = cards.join('');
+        totalEl.textContent = `${total}회`;
+    }
+
+    function changeMonth(delta) {
+        currentMonth += delta;
+        if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+        if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+
+        // 달력도 해당 달로 이동
+        calendar.gotoDate(`${currentYear}-${String(currentMonth).padStart(2, '0')}-01`);
+        // datesSet 콜백이 renderSummary 호출하므로 별도 호출 불필요
+    }
+</script>
+{% endblock %}

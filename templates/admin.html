@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+
+
+{% block content %}
+<!-- PIN Auth Modal -->
+<div id="authModal"
+    class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50 transition-opacity duration-300">
+    <div
+        class="relative bg-white/80 backdrop-blur-xl p-10 rounded-3xl shadow-2xl w-full max-w-sm border border-white/50 text-center transform transition-all scale-100">
+        <div class="mb-6 flex justify-center">
+            <span class="p-3 bg-indigo-100 text-indigo-600 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </span>
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-gray-800 tracking-tight">관리자 접속</h2>
+        <p class="mb-8 text-sm text-gray-500">설정된 PIN 번호를 입력해주세요.</p>
+
+        <input type="password" id="pinInput" placeholder="● ● ● ●"
+            class="w-full py-3 px-4 bg-gray-50/50 border border-gray-200 rounded-xl mb-6 text-center text-3xl tracking-[0.5em] focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+            maxlength="8" onkeyup="if(event.key === 'Enter') checkPin()">
+
+        <p id="errorMsg"
+            class="text-red-500 text-xs font-medium mb-4 hidden bg-red-50 py-1 px-3 rounded-full inline-block">PIN 번호가
+            올바르지 않습니다.</p>
+
+        <button onclick="checkPin()"
+            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3.5 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-indigo-500/30 transform hover:-translate-y-0.5">
+            접속하기
+        </button>
+    </div>
+</div>
+
+<div id="adminContent" class="hidden space-y-8 animate-fade-in-up">
+    <!-- Header Card -->
+    <div
+        class="bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h3 class="text-2xl font-bold text-gray-900 tracking-tight">메시지 템플릿 관리</h3>
+            <p class="mt-2 text-gray-500">
+                각 상황별 자동 발송 메시지를 수정합니다.
+            </p>
+        </div>
+        <button onclick="logout()"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">
+            로그아웃
+        </button>
+    </div>
+
+    <!-- Main Content Card -->
+    <div
+        class="bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 rounded-2xl overflow-hidden">
+
+        <!-- Category Tabs -->
+        <div class="border-b border-gray-100 p-2 overflow-x-auto">
+            <div class="flex space-x-1 p-1 bg-gray-50/50 rounded-xl mb-6">
+                <button onclick="filterTemplates('all')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900 active-tab">
+                    전체
+                </button>
+                <button onclick="filterTemplates('초원고택')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    초원고택
+                </button>
+                <button onclick="filterTemplates('초원별장')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    초원별장
+                </button>
+                <button onclick="filterTemplates('초원브릿지')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    초원브릿지
+                </button>
+                <button onclick="filterTemplates('월명주택')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    월명주택
+                </button>
+                <button onclick="filterTemplates('공통메세지')"
+                    class="tab-btn px-6 py-2.5 rounded-lg text-sm font-medium transition-all text-gray-500 hover:text-gray-900">
+                    공통메세지
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">숙소 /
+                            트리거</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">발송 시간
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">제목</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">내용</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">작업
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="templateList" class="bg-white/40 divide-y divide-gray-50">
+                    <!-- Loaded via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal"
+    class="hidden fixed inset-0 bg-gray-900/30 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center z-50">
+    <div
+        class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-100 transform transition-all scale-100">
+        <div class="px-8 py-6 border-b border-gray-100">
+            <h3 class="text-xl font-bold text-gray-900">템플릿 수정</h3>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <input type="hidden" id="editId">
+            <input type="hidden" id="editAccName">
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">발송 시간</label>
+                <div class="relative">
+                    <input type="time" id="editTime" step="1"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 font-mono"
+                        readonly>
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-red-400">* 발송 시간은 변경할 수 없습니다.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">제목 (선택사항)</label>
+                <input type="text" id="editSubject" placeholder="LMS 제목 (비워두면 SMS 단문 발송)"
+                    class="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">내용</label>
+                <textarea id="editContent" rows="10"
+                    class="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm text-sm leading-relaxed"></textarea>
+            </div>
+
+            <!-- Group Apply Removed -->
+        </div>
+
+        <div class="px-8 py-5 bg-gray-50/50 rounded-b-3xl flex justify-end space-x-3">
+            <button onclick="closeEditModal()"
+                class="px-6 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                취소
+            </button>
+            <button onclick="saveTemplate()"
+                class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                저장하기
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.4s ease-out forwards;
+    }
+</style>
+
+<script>
+    async function checkPin() {
+        const pin = document.getElementById('pinInput').value;
+        try {
+            const res = await fetch('/admin/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            });
+
+            if (res.ok) {
+                document.getElementById('authModal').classList.add('hidden');
+                document.getElementById('adminContent').classList.remove('hidden');
+                loadTemplates();
+                sessionStorage.setItem('isAdmin', 'true');
+            } else {
+                document.getElementById('errorMsg').classList.remove('hidden');
+                document.getElementById('pinInput').value = '';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('인증 서버 오류');
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('isAdmin');
+        location.reload();
+    }
+
+    if (sessionStorage.getItem('isAdmin') === 'true') {
+        document.getElementById('authModal').classList.add('hidden');
+        document.getElementById('adminContent').classList.remove('hidden');
+        loadTemplates();
+    }
+
+    let templatesData = [];
+    let currentCategory = 'all';
+
+    const triggerMap = {
+        'checkin_food_0900': '맛집안내(입실일 09:00)',
+        'checkin_1900': '전체공통 저녁안내(입실일 19:00)',
+        'checkout_0900': '전체공통 퇴실안내(퇴실일 09:00)',
+        'multinight_0900': '연박안내(연박일 오전 09:00)',
+        'checkin_guide_0900': '체크인안내(입실일 09:00)',
+        'checkin_1450': '입실안내(입실일 14:48)',
+        'checkout_1900': '후기작성안내(페이백, 퇴실일 19:00)'
+    };
+
+    async function loadTemplates() {
+        const tbody = document.getElementById('templateList');
+        try {
+            const res = await fetch('/templates/');
+            templatesData = await res.json();
+            filterTemplates(currentCategory);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function filterTemplates(category) {
+        currentCategory = category;
+
+        // Update tabs UI
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active-tab', 'text-gray-900', 'bg-white', 'shadow-sm');
+            btn.classList.add('text-gray-500'); // Reset to default
+
+            // Check if this button corresponds to the selected category
+            // Normalize text for comparison
+            const btnText = btn.innerText.trim();
+            if (
+                (category === 'all' && btnText === '전체') ||
+                (category === btnText)
+            ) {
+                btn.classList.add('active-tab', 'text-gray-900', 'bg-white', 'shadow-sm');
+                btn.classList.remove('text-gray-500');
+            }
+        });
+
+        renderTemplates();
+    }
+
+    function renderTemplates() {
+        if (!templatesData) return;
+
+        const tbody = document.getElementById('templateList');
+
+        const filtered = templatesData.filter(t => {
+            if (currentCategory === 'all') return true;
+            if (currentCategory === '초원고택') return t.accommodation_name.includes('초원고택');
+            if (currentCategory === '초원별장') return t.accommodation_name.includes('초원별장');
+            if (currentCategory === '월명주택') return t.accommodation_name.includes('월명주택');
+            return t.accommodation_name === currentCategory;
+        });
+
+        // Sort by accommodation name then by time explicitly
+        filtered.sort((a, b) => {
+            if (a.accommodation_name < b.accommodation_name) return -1;
+            if (a.accommodation_name > b.accommodation_name) return 1;
+
+            // If accommodation is same, sort by send time
+            if (a.send_time < b.send_time) return -1;
+            if (a.send_time > b.send_time) return 1;
+
+            // If time is same, sort by trigger type to keep stable sort
+            if (a.trigger_type < b.trigger_type) return -1;
+            if (a.trigger_type > b.trigger_type) return 1;
+            return 0;
+        });
+
+        tbody.innerHTML = filtered.map(t => {
+            const friendlyTrigger = triggerMap[t.trigger_type] || t.trigger_type;
+            const rowClass = t.accommodation_name === '공통메세지' ? 'bg-indigo-50/50' : '';
+            return `
+            <tr class="${rowClass}">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-bold text-gray-900">${t.accommodation_name}</div>
+                    <div class="text-sm text-gray-500">${friendlyTrigger}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${t.send_time}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${t.subject || '-'}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${t.content}">
+                    ${t.content}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button onclick="openEditModal(${t.id})" class="text-indigo-600 hover:text-indigo-900">수정</button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    function openEditModal(id) {
+        const t = templatesData.find(x => x.id === id);
+        if (!t) return;
+
+        document.getElementById('editId').value = t.id;
+        document.getElementById('editAccName').value = t.accommodation_name;
+        document.getElementById('editTime').value = t.send_time;
+        document.getElementById('editContent').value = t.content;
+        document.getElementById('editSubject').value = t.subject || '';
+
+        // Removed Group Apply Logic
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function saveTemplate() {
+        const id = document.getElementById('editId').value;
+        const send_time = document.getElementById('editTime').value;
+        const content = document.getElementById('editContent').value;
+        const subject = document.getElementById('editSubject').value;
+
+        // Removed apply_all
+
+        try {
+            const res = await fetch(`/templates/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: content,
+                    send_time: send_time,
+                    subject: subject,
+                    apply_all: false // Always false
+                })
+            });
+
+            if (res.ok) {
+                alert('저장되었습니다.');
+                closeEditModal();
+                loadTemplates(); // reload to see broader changes
+            } else {
+                alert('저장 실패: ' + await res.text());
+            }
+        } catch (err) {
+            alert('오류 발생: ' + err);
+        }
+    }
+</script>
+{% endblock %}

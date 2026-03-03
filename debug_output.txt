@@ -1,0 +1,7 @@
+--- Templates ---
+Template: multinight_0900 | Time: 09:00:00 | Acc: 공통메세지
+--------------------
+⚠️ Logs found! Count: 3
+  - [LOG] ID: 2, Trigger: checkin_food_0900, Status: success, Time: 2026-02-10T00:00:00+00:00
+  - [LOG] ID: 3, Trigger: checkin_guide_0900, Status: success, Time: 2026-02-10T00:00:00+00:00
+  - [LOG] ID: 4, Trigger: multinight_0900, Status: success, Time: 2026-02-10T00:00:00+00:00
