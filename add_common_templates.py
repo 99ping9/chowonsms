@@ -9,7 +9,7 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 
 if not url or not key:
-    print("Error: SUPABASE_URL or SUPABASE_KEY not found.")
+    print("Error: SUPABASE_URL or SUPABASE_KEY not found..")
     sys.exit(1)
 
 supabase: Client = create_client(url, key)

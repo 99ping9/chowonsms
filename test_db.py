@@ -10,7 +10,7 @@ url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 
 print("--------------------------------------------------")
-print("Supabase Connection Test")
+print("Supabase Connection Testdd")
 print("--------------------------------------------------")
 print(f"URL: {url}")
 print(f"KEY: {key[:10]}..." if key else "KEY: None")
